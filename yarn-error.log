@@ -1,0 +1,42 @@
+Arguments: 
+  C:\Program Files\nodejs\node.exe C:\Program Files (x86)\Yarn\bin\yarn.js add ava delay inRange timeSpan -D
+
+PATH: 
+  C:\Users\dream\AppData\Local\oh-my-posh;C:\Users\dream\AppData\Local\oh-my-posh;C:\Program Files\WindowsApps\Microsoft.WindowsTerminal_1.12.10732.0_x64__8wekyb3d8bbwe;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files\TortoiseSVN\bin;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Users\dream\AppData\Local\GitHub\iyrs4gyp.vdh.deleteme\usr\bin;C:\Program Files\Microsoft VS Code\bin;C:\ProgramData\chocolatey\bin;C:\Users\dream\AppData\Roaming\nvm;C:\Program Files\nodejs;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\Yarn\bin\;C:\Program Files\dotnet\;C:\Program Files\Git\cmd;C:\Program Files\Bandizip\;C:\Users\dream\.windows-build-tools\python27\;C:\Users\dream\.windows-build-tools\python27\;C:\Users\dream\scoop\shims;C:\Ruby24-x64\bin;C:\Users\dream\AppData\Local\Microsoft\WindowsApps;E:\soft\Microsoft VS Code\bin;G:\AppServ\Apache24\bin;G:\AppServ\php5;G:\AppServ\MySQL\bin;C:\Users\dream\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\dream\AppData\Local\hyper\app-3.0.2\resources\bin;C:\Program Files\Git\usr\bin;C:\Users\dream\AppData\Local\Microsoft\WindowsApps;C:\Users\dream\AppData\Local\Yarn\bin;C:\ProgramData\chocoportable\bin;E:\Users\dream\AppData\Local\Programs\Fiddler;E:\Users\dream\AppData\Local\Programs\espanso
+
+Yarn version: 
+  1.21.1
+
+Node version: 
+  16.3.0
+
+Platform: 
+  win32 x64
+
+Trace: 
+  Error: https://mirrors.cloud.tencent.com/npm/inRange: no such package available
+      at Request.params.callback [as _callback] (C:\Program Files (x86)\Yarn\lib\cli.js:66056:18)
+      at Request.self.callback (C:\Program Files (x86)\Yarn\lib\cli.js:140665:22)
+      at Request.emit (node:events:394:28)
+      at Request.<anonymous> (C:\Program Files (x86)\Yarn\lib\cli.js:141637:10)
+      at Request.emit (node:events:394:28)
+      at IncomingMessage.<anonymous> (C:\Program Files (x86)\Yarn\lib\cli.js:141559:12)
+      at Object.onceWrapper (node:events:513:28)
+      at IncomingMessage.emit (node:events:406:35)
+      at endReadableNT (node:internal/streams/readable:1329:12)
+      at processTicksAndRejections (node:internal/process/task_queues:83:21)
+
+npm manifest: 
+  {
+    "name": "read-p-limit",
+    "version": "1.0.0",
+    "main": "index.js",
+    "author": "f-stone <dreamersfly@163.com>",
+    "license": "MIT"
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
