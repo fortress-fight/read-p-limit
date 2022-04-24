@@ -6,7 +6,7 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "test": "xo && ava && tsd"
+        "test": "xo && ava"
     },
     "volta": {
         "node": "16.14.2",
@@ -16,6 +16,7 @@
         "ava": "^4.2.0",
         "delay": "^5.0.0",
         "in-range": "^3.0.0",
+        "random-int": "^3.0.0",
         "time-span": "^5.0.0",
         "tsd": "^0.20.0",
         "xo": "^0.48.0"

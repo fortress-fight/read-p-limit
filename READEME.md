@@ -33,7 +33,7 @@ npx gitignore node
 1.  安装依赖
 
     ```shell
-    yarn add ava delay inRange timeSpan xo tsd -D
+    yarn add ava delay inRange timeSpan random-int xo tsd -D
     yarn add yocto-queue
     ```
 
@@ -76,13 +76,52 @@ npx gitignore node
     {
         ...
         "scripts": {
-            "test": "xo && ava && tsd"
+            "test": "xo && ava"
         },
         ...
     }
     ```
 
     > 如果对格式没有要求，移除 xo
+
+## 代码主题实现
+
+### Task 1 通过测试 `concurrency: 1`
+
+```javascript
+export default function pLimit(limit) {
+    // 存放前置执行任务
+    let frontTasks = [];
+    // 临时存放任务
+    let tempTasks = [];
+    return (task) => {
+        // 返回值预期：
+        // 一个包含前置执行任务的 promise，保证执行顺序 （前置任务 => 当前任务）
+        let result;
+
+        if (frontTasks.length < limit) {
+            // task 直接作为返回主体，并存储为下一组的前置任务
+            result = task();
+            frontTasks.push(result);
+        } else if (frontTasks.length >= limit) {
+            // task 与之前的执行任务组成新的 Promise 作为返回主体
+            result = Promise.all(frontTasks).then(() => {
+                return task();
+            });
+            // 将 task 与之前的执行任务组成新的 Promise 作为新的前置任务
+            // 储存在临时组中
+            tempTasks.push(result);
+            // 如果临时组达到了限制数，更新执行任务组，并清空临时组
+            while (tempTasks.length === limit) {
+                frontTasks = tempTasks;
+                tempTasks = [];
+            }
+        }
+
+        return result;
+    };
+}
+```
 
 ## 问题汇总
 
