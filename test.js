@@ -1,7 +1,7 @@
 /*
  * @Description: 测试文件
  * @Author: F-Stone
- * @LastEditTime: 2022-04-24 18:53:26
+ * @LastEditTime: 2022-04-24 19:18:56
  */
 import test from "ava";
 import delay from "delay";
@@ -71,4 +71,11 @@ test("continues after sync throw", async (t) => {
     await Promise.all(promises).catch(() => {});
 
     t.is(ran, true);
+});
+
+test("accepts additional arguments", async (t) => {
+    const limit = pLimit(1);
+    const symbol = Symbol("test");
+
+    await limit((a) => t.is(a, symbol), symbol);
 });

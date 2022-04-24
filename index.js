@@ -1,7 +1,7 @@
 /*
  * @Description:
  * @Author: F-Stone
- * @LastEditTime: 2022-04-24 19:11:51
+ * @LastEditTime: 2022-04-24 19:21:21
  */
 
 export default function pLimit(limit) {
@@ -10,7 +10,7 @@ export default function pLimit(limit) {
     // 临时存放任务
     let temporaryTasks = [];
 
-    return (task) => {
+    return (task, argument) => {
         // 返回值预期：
         // 一个包含前置执行任务的 promise，保证执行顺序 （前置任务 => 当前任务）
         let result;
@@ -18,7 +18,7 @@ export default function pLimit(limit) {
         if (frontTasks.length < limit) {
             // 将 task 直接作为返回主体，并存储为下一组的前置任务
             try {
-                result = task();
+                result = task.call(this, argument);
             } catch {
                 result = Promise.resolve(undefined);
             }
@@ -28,7 +28,7 @@ export default function pLimit(limit) {
             // 将 task 与之前的执行任务组成新的 Promise 作为返回主体
             result = Promise.all(frontTasks).then(() => {
                 try {
-                    return task();
+                    return task.call(this, argument);
                 } catch {
                     return undefined;
                 }
