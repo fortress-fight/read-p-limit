@@ -1,7 +1,7 @@
 /*
  * @Description:
  * @Author: F-Stone
- * @LastEditTime: 2022-04-25 14:15:40
+ * @LastEditTime: 2022-04-25 14:26:02
  */
 export default function pLimit(limitCount) {
     if (!/^[1-9]\d*$/.test(limitCount.toString())) {
@@ -15,7 +15,7 @@ export default function pLimit(limitCount) {
     // 临时存放任务
     let temporaryTasks = [];
 
-    function limit(task, argument) {
+    function limit(task, ...argument) {
         // 返回值预期：
         // 一个包含前置执行任务的 promise，保证执行顺序 （前置任务 => 当前任务）
         let result;
@@ -30,14 +30,16 @@ export default function pLimit(limitCount) {
                 limit.pendingCount--;
                 limit.activeCount++;
                 try {
-                    return Promise.resolve(task(argument)).then((response) => {
-                        limit.activeCount--;
-                        if (limit.pendingCount === 0) {
-                            frontTasks = [];
-                        }
+                    return Promise.resolve(task(...argument)).then(
+                        (response) => {
+                            limit.activeCount--;
+                            if (limit.pendingCount === 0) {
+                                frontTasks = [];
+                            }
 
-                        return response;
-                    });
+                            return response;
+                        }
+                    );
                 } catch {
                     result = undefined;
                 }
@@ -54,14 +56,16 @@ export default function pLimit(limitCount) {
                 limit.pendingCount--;
                 limit.activeCount++;
                 try {
-                    return Promise.resolve(task(argument)).then((response) => {
-                        limit.activeCount--;
-                        if (limit.pendingCount === 0) {
-                            frontTasks = [];
-                        }
+                    return Promise.resolve(task(...argument)).then(
+                        (response) => {
+                            limit.activeCount--;
+                            if (limit.pendingCount === 0) {
+                                frontTasks = [];
+                            }
 
-                        return response;
-                    });
+                            return response;
+                        }
+                    );
                 } catch {
                     return undefined;
                 }

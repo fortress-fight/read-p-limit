@@ -86,7 +86,7 @@ npx gitignore node
 
 ## 代码主题实现
 
-### Task 1 通过测试 `concurrency: 1`
+### Task1 通过测试 `concurrency: 1`
 
 1.  index.js
 
@@ -481,6 +481,77 @@ npx gitignore node
     +
         return limit;
     }
+    ```
+
+## index.d.ts & index.test-d.ts
+
+添加类型定义与类型定义检测
+
+1.  index.test-d.ts
+
+    ```javascript
+    import { expectType } from "tsd";
+    import pLimit from "./index.js";
+
+    const limit = pLimit(1);
+
+    const input = [
+        limit(async () => "foo"),
+        limit(async () => "bar"),
+        limit(async () => undefined),
+    ];
+
+    expectType<Promise<Array<string | undefined>>>(Promise.all(input));
+
+    expectType<Promise<string>>(limit((_a: string) => "", "test"));
+    expectType<Promise<string>>(
+        limit(async (_a: string, _b: number) => "", "test", 1)
+    );
+
+    expectType<number>(limit.activeCount);
+    expectType<number>(limit.pendingCount);
+
+    expectType<void>(limit.clearQueue());
+    ```
+
+2.  index.d.ts
+
+    ```javascript
+    /**
+        Run multiple promise-returning & async functions with limited concurrency.
+
+        @param limitCount - 并发数，最小为 1.
+        @returns `limit` 处理器.
+    */
+    export default function pLimit(limitCount: number): LimitFunction;
+
+    export interface LimitFunction {
+        /**
+     正在执行的 promises 数量.
+    */
+        readonly activeCount: number;
+
+        /**
+        等待执行的 promises 数量.
+    */
+        readonly pendingCount: number;
+
+        /**
+        清空等待执行的 promises 队列.
+    */
+        clearQueue: () => void;
+
+        /**
+     @param fn - Promise-returning/async function.
+    @param arguments - Any arguments to pass through to `fn`. Support for passing arguments on to the `fn` is provided in order to be able to avoid creating unnecessary closures. You probably don't need this optimization unless you're pushing a lot of functions.
+    @returns The promise returned by calling `fn(...arguments)`.
+    */
+        <Arguments extends unknown[], ReturnType>(
+            fn: (...arguments: Arguments) => PromiseLike<ReturnType> | ReturnType,
+            ...arguments: Arguments
+        ): Promise<ReturnType>;
+    }
+
     ```
 
 ## 问题汇总
