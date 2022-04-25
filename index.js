@@ -1,7 +1,7 @@
 /*
  * @Description:
  * @Author: F-Stone
- * @LastEditTime: 2022-04-25 13:44:57
+ * @LastEditTime: 2022-04-25 14:15:40
  */
 export default function pLimit(limitCount) {
     if (!/^[1-9]\d*$/.test(limitCount.toString())) {
@@ -23,6 +23,10 @@ export default function pLimit(limitCount) {
         if (frontTasks.length < limitCount) {
             // 将 task 直接作为返回主体，并存储为下一组的前置任务
             result = Promise.resolve().then(() => {
+                if (limit.pendingCount === 0) {
+                    return undefined;
+                }
+
                 limit.pendingCount--;
                 limit.activeCount++;
                 try {
@@ -43,6 +47,10 @@ export default function pLimit(limitCount) {
         } else if (frontTasks.length >= limitCount) {
             // 将 task 与之前的执行任务组成新的 Promise 作为返回主体
             result = Promise.all(frontTasks).then(() => {
+                if (limit.pendingCount === 0) {
+                    return undefined;
+                }
+
                 limit.pendingCount--;
                 limit.activeCount++;
                 try {
@@ -73,5 +81,10 @@ export default function pLimit(limitCount) {
 
     limit.activeCount = 0;
     limit.pendingCount = 0;
+    limit.clearQueue = function () {
+        temporaryTasks = [];
+        limit.pendingCount = 0;
+    };
+
     return limit;
 }

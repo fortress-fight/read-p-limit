@@ -393,7 +393,7 @@ npx gitignore node
 
 2.  index.js
 
-    ```javascript
+    ```bash
     @@ -1,9 +1,15 @@
     /*
     * @Description:
@@ -411,6 +411,76 @@ npx gitignore node
         // 存放前置执行任务
         let frontTasks = [];
         // 临时存放任务
+    ```
+
+### Task6 通过测试 `清空队列`
+
+1.  test.js
+
+    ```javascript
+    test("清空队列", async (t) => {
+        const limit = pLimit(5);
+        const immediatePromises = Array.from({ length: 5 }, () =>
+            limit(() => delay(1000))
+        );
+        const delayedPromises = Array.from({ length: 3 }, () =>
+            limit(() => delay(1000))
+        );
+
+        await Promise.resolve();
+        limit.clearQueue();
+        t.is(limit.activeCount, 5);
+        t.is(limit.pendingCount, 0);
+
+        await Promise.all(immediatePromises);
+        t.is(limit.activeCount, 0);
+        t.is(limit.pendingCount, 0);
+
+        await Promise.all(delayedPromises);
+
+        t.is(limit.activeCount, 0);
+        t.is(limit.pendingCount, 0);
+    });
+    ```
+
+2.  index.js
+
+    ```bash
+     export default function pLimit(limitCount) {
+        if (!/^[1-9]\d*$/.test(limitCount.toString())) {
+    @@ -23,6 +23,10 @@ export default function pLimit(limitCount) {
+            if (frontTasks.length < limitCount) {
+                // 将 task 直接作为返回主体，并存储为下一组的前置任务
+                result = Promise.resolve().then(() => {
+    +                if (limit.pendingCount === 0) {
+    +                    return undefined;
+    +                }
+    +
+                    limit.pendingCount--;
+                    limit.activeCount++;
+                    try {
+    @@ -43,6 +47,10 @@ export default function pLimit(limitCount) {
+            } else if (frontTasks.length >= limitCount) {
+                // 将 task 与之前的执行任务组成新的 Promise 作为返回主体
+                result = Promise.all(frontTasks).then(() => {
+    +                if (limit.pendingCount === 0) {
+    +                    return undefined;
+    +                }
+    +
+                    limit.pendingCount--;
+                    limit.activeCount++;
+                    try {
+    @@ -73,5 +81,10 @@ export default function pLimit(limitCount) {
+
+        limit.activeCount = 0;
+        limit.pendingCount = 0;
+    +    limit.clearQueue = function () {
+    +        temporaryTasks = [];
+    +        limit.pendingCount = 0;
+    +    };
+    +
+        return limit;
+    }
     ```
 
 ## 问题汇总
