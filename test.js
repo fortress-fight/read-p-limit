@@ -1,7 +1,7 @@
 /*
  * @Description: 测试文件
  * @Author: F-Stone
- * @LastEditTime: 2022-04-25 14:15:55
+ * @LastEditTime: 2022-04-25 19:42:19
  */
 import test from "ava";
 import delay from "delay";
@@ -29,6 +29,27 @@ test("concurrency: 1", async (t) => {
     t.deepEqual(await Promise.all(input.map((x) => mapper(x))), [10, 20, 30]);
     t.true(inRange(end(), { start: 590, end: 650 }));
 });
+
+// test("concurrency: 2", async (t) => {
+//     const input = [
+//         [10, 300],
+//         [20, 10],
+//         [30, 100],
+//         [20, 200],
+//     ];
+
+//     const end = timeSpan();
+//     const limit = pLimit(2);
+
+//     const mapper = ([value, ms]) =>
+//         limit(async () => {
+//             await delay(ms);
+//             return value;
+//         });
+
+//     t.deepEqual(await Promise.all(input.map((x) => mapper(x))), [10, 20, 30]);
+//     t.true(inRange(end(), { start: 300, end: 360 }));
+// });
 
 test("concurrency: 4", async (t) => {
     const concurrency = 5;

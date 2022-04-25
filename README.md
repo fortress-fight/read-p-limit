@@ -74,6 +74,11 @@ npx gitignore node
 :white_check_mark: Task5 通过测试 `throws on invalid concurrency argument`  
 :white_check_mark: Task6 通过测试 `清空队列`
 
+## 源码阅读
+
+源码地址：[p-limit](https://github.com/sindresorhus/p-limit)
+阅读笔记：[read-p-limit](/doc/read-p-limit.md);
+
 ## index.d.ts & index.test-d.ts
 
 添加类型定义与类型定义检测

@@ -1,94 +1,74 @@
-/*
- * @Description:
- * @Author: F-Stone
- * @LastEditTime: 2022-04-25 14:26:02
- */
-export default function pLimit(limitCount) {
-    if (!/^[1-9]\d*$/.test(limitCount.toString())) {
+import Queue from "yocto-queue";
+export default function pLimit(concurrency) {
+    if (
+        !(
+            (Number.isInteger(concurrency) ||
+                concurrency === Number.POSITIVE_INFINITY) &&
+            concurrency > 0
+        )
+    ) {
         throw new TypeError(
-            "Expected `limitCount` to be a number from 1 and up"
+            "Expected `concurrency` to be a number from 1 and up"
         );
     }
 
-    // 存放前置执行任务
-    let frontTasks = [];
-    // 临时存放任务
-    let temporaryTasks = [];
+    const queue = new Queue();
+    let activeCount = 0;
 
-    function limit(task, ...argument) {
-        // 返回值预期：
-        // 一个包含前置执行任务的 promise，保证执行顺序 （前置任务 => 当前任务）
-        let result;
-        limit.pendingCount++;
-        if (frontTasks.length < limitCount) {
-            // 将 task 直接作为返回主体，并存储为下一组的前置任务
-            result = Promise.resolve().then(() => {
-                if (limit.pendingCount === 0) {
-                    return undefined;
-                }
+    const next = () => {
+        activeCount--;
 
-                limit.pendingCount--;
-                limit.activeCount++;
-                try {
-                    return Promise.resolve(task(...argument)).then(
-                        (response) => {
-                            limit.activeCount--;
-                            if (limit.pendingCount === 0) {
-                                frontTasks = [];
-                            }
-
-                            return response;
-                        }
-                    );
-                } catch {
-                    result = undefined;
-                }
-            });
-
-            frontTasks.push(result);
-        } else if (frontTasks.length >= limitCount) {
-            // 将 task 与之前的执行任务组成新的 Promise 作为返回主体
-            result = Promise.all(frontTasks).then(() => {
-                if (limit.pendingCount === 0) {
-                    return undefined;
-                }
-
-                limit.pendingCount--;
-                limit.activeCount++;
-                try {
-                    return Promise.resolve(task(...argument)).then(
-                        (response) => {
-                            limit.activeCount--;
-                            if (limit.pendingCount === 0) {
-                                frontTasks = [];
-                            }
-
-                            return response;
-                        }
-                    );
-                } catch {
-                    return undefined;
-                }
-            });
-            // 将 task 与之前的执行任务组成新的 Promise 作为新的前置任务
-            // 储存在临时组中
-            temporaryTasks.push(result);
-            // 如果临时组达到了限制数，更新执行任务组，并清空临时组
-            if (temporaryTasks.length === limitCount) {
-                frontTasks = temporaryTasks;
-                temporaryTasks = [];
-            }
+        if (queue.size > 0) {
+            queue.dequeue()();
         }
-
-        return result;
-    }
-
-    limit.activeCount = 0;
-    limit.pendingCount = 0;
-    limit.clearQueue = function () {
-        temporaryTasks = [];
-        limit.pendingCount = 0;
     };
 
-    return limit;
+    const run = async (fn, resolve, args) => {
+        activeCount++;
+
+        const result = (async () => fn(...args))();
+
+        resolve(result);
+
+        await result;
+
+        next();
+    };
+
+    const enqueue = (fn, resolve, args) => {
+        queue.enqueue(run.bind(undefined, fn, resolve, args));
+
+        (async () => {
+            // This function needs to wait until the next microtask before comparing
+            // `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
+            // when the run function is dequeued and called. The comparison in the if-statement
+            // needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
+            await Promise.resolve();
+
+            if (activeCount < concurrency && queue.size > 0) {
+                queue.dequeue()();
+            }
+        })();
+    };
+
+    const generator = (fn, ...args) =>
+        new Promise((resolve) => {
+            enqueue(fn, resolve, args);
+        });
+
+    Object.defineProperties(generator, {
+        activeCount: {
+            get: () => activeCount,
+        },
+        pendingCount: {
+            get: () => queue.size,
+        },
+        clearQueue: {
+            value: () => {
+                queue.clear();
+            },
+        },
+    });
+
+    return generator;
 }
