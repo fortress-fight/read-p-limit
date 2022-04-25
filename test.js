@@ -1,7 +1,7 @@
 /*
  * @Description: 测试文件
  * @Author: F-Stone
- * @LastEditTime: 2022-04-24 19:18:56
+ * @LastEditTime: 2022-04-24 19:36:08
  */
 import test from "ava";
 import delay from "delay";
@@ -78,4 +78,62 @@ test("accepts additional arguments", async (t) => {
     const symbol = Symbol("test");
 
     await limit((a) => t.is(a, symbol), symbol);
+});
+
+test("does not ignore errors", async (t) => {
+    const limit = pLimit(1);
+    const error = new Error("🦄");
+
+    const promises = [
+        limit(async () => {
+            await delay(30);
+        }),
+        limit(async () => {
+            await delay(80);
+            throw error;
+        }),
+        limit(async () => {
+            await delay(50);
+        }),
+    ];
+
+    await t.throwsAsync(Promise.all(promises), { is: error });
+});
+
+test("activeCount and pendingCount properties", async (t) => {
+    const limit = pLimit(5);
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    const runningPromise1 = limit(() => delay(1000));
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 1);
+
+    await Promise.resolve();
+    t.is(limit.activeCount, 1);
+    t.is(limit.pendingCount, 0);
+
+    await runningPromise1;
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    const immediatePromises = Array.from({ length: 5 }, () =>
+        limit(() => delay(1000))
+    );
+    const delayedPromises = Array.from({ length: 3 }, () =>
+        limit(() => delay(1000))
+    );
+
+    await Promise.resolve();
+    t.is(limit.activeCount, 5);
+    t.is(limit.pendingCount, 3);
+
+    await Promise.all(immediatePromises);
+    t.is(limit.activeCount, 3);
+    t.is(limit.pendingCount, 0);
+
+    await Promise.all(delayedPromises);
+
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
 });
