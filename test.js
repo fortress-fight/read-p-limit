@@ -1,7 +1,7 @@
 /*
  * @Description: 测试文件
  * @Author: F-Stone
- * @LastEditTime: 2022-04-24 19:36:08
+ * @LastEditTime: 2022-04-25 13:32:27
  */
 import test from "ava";
 import delay from "delay";
@@ -136,4 +136,26 @@ test("activeCount and pendingCount properties", async (t) => {
 
     t.is(limit.activeCount, 0);
     t.is(limit.pendingCount, 0);
+});
+
+test("throws on invalid concurrency argument", (t) => {
+    t.throws(() => {
+        pLimit(0);
+    });
+
+    t.throws(() => {
+        pLimit(-1);
+    });
+
+    t.throws(() => {
+        pLimit(1.2);
+    });
+
+    t.throws(() => {
+        pLimit(undefined);
+    });
+
+    t.throws(() => {
+        pLimit(true);
+    });
 });

@@ -363,6 +363,56 @@ npx gitignore node
     }
     ```
 
+### Task5 通过测试 `throws on invalid concurrency argument`
+
+1.  test.js
+
+    ```javascript
+    test("throws on invalid concurrency argument", (t) => {
+        t.throws(() => {
+            pLimit(0);
+        });
+
+        t.throws(() => {
+            pLimit(-1);
+        });
+
+        t.throws(() => {
+            pLimit(1.2);
+        });
+
+        t.throws(() => {
+            pLimit(undefined);
+        });
+
+        t.throws(() => {
+            pLimit(true);
+        });
+    });
+    ```
+
+2.  index.js
+
+    ```javascript
+    @@ -1,9 +1,15 @@
+    /*
+    * @Description:
+    * @Author: F-Stone
+    - * @LastEditTime: 2022-04-25 13:28:14
+    + * @LastEditTime: 2022-04-25 13:44:57
+    */
+    export default function pLimit(limitCount) {
+    +    if (!/^[1-9]\d*$/.test(limitCount.toString())) {
+    +        throw new TypeError(
+    +            "Expected `limitCount` to be a number from 1 and up"
+    +        );
+    +    }
+    +
+        // 存放前置执行任务
+        let frontTasks = [];
+        // 临时存放任务
+    ```
+
 ## 问题汇总
 
 ### prettier 与 ox
