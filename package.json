@@ -6,7 +6,8 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "test": "xo && ava && tsd"
+        "test": "xo && ava",
+        "fixed": "xo --fix"
     },
     "volta": {
         "node": "16.14.2",

@@ -1,7 +1,7 @@
 /*
  * @Description: 测试文件
  * @Author: F-Stone
- * @LastEditTime: 2022-04-26 12:16:06
+ * @LastEditTime: 2022-04-27 11:15:58
  */
 import test from "ava";
 import delay from "delay";
@@ -186,10 +186,14 @@ test("throws on invalid concurrency argument", (t) => {
 
 test("清空队列", async (t) => {
     const limit = pLimit(5);
+    const error = new Error("Aborted");
+
     const immediatePromises = Array.from({ length: 5 }, () =>
         limit(() => delay(1000))
     );
-    Array.from({ length: 3 }, () => limit(() => delay(1000)));
+    const delayedPromises = Array.from({ length: 3 }, () =>
+        limit(() => delay(1000))
+    );
 
     await Promise.resolve();
     limit.clearQueue();
@@ -197,6 +201,15 @@ test("清空队列", async (t) => {
     t.is(limit.pendingCount, 0);
 
     await Promise.all(immediatePromises);
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    await Promise.all(delayedPromises)
+        .then((response) => {
+            t.is(response[0].message, error.message);
+        })
+        .catch(() => {});
+
     t.is(limit.activeCount, 0);
     t.is(limit.pendingCount, 0);
 });
