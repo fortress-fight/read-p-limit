@@ -103,7 +103,7 @@ export default function pLimit(concurrency) {
 
             t.deepEqual(
                 await Promise.all(input.map((x) => mapper(x))),
-                [10, 20, 30]
+                [10, 20, 30, 20]
             );
             t.true(inRange(end(), { start: 300, end: 360 }));
         });

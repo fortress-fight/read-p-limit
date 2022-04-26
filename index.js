@@ -1,71 +1,56 @@
-import Queue from "yocto-queue";
 export default function pLimit(concurrency) {
-    if (
-        !(
-            (Number.isInteger(concurrency) ||
-                concurrency === Number.POSITIVE_INFINITY) &&
-            concurrency > 0
-        )
-    ) {
-        throw new TypeError(
-            "Expected `concurrency` to be a number from 1 and up"
+    if (!/^[1-9]\d*$/.test(concurrency.toString())) {
+        throw new Error(
+            `Expected "concurrency" to be a number from 1 and up, got ${concurrency}`
         );
     }
 
-    const queue = new Queue();
     let activeCount = 0;
+    let queue = [];
 
-    const next = () => {
+    function next() {
         activeCount--;
-
-        if (queue.size > 0) {
-            queue.dequeue()();
+        if (queue.length > 0) {
+            queue.shift()();
         }
-    };
+    }
 
-    const run = async (fn, resolve, args) => {
+    async function run(fn, resolve, arg) {
         activeCount++;
-
-        const result = (async () => fn(...args))();
-
+        const result = (async () => fn(...arg))();
         resolve(result);
 
-        await result;
+        try {
+            await result;
+        } catch {}
 
         next();
-    };
+    }
 
-    const enqueue = (fn, resolve, args) => {
-        queue.enqueue(run.bind(undefined, fn, resolve, args));
+    function generator(fn, ...arg) {
+        return new Promise((resolve) => {
+            queue.push(run.bind(undefined, fn, resolve, arg));
 
-        (async () => {
-            // This function needs to wait until the next microtask before comparing
-            // `activeCount` to `concurrency`, because `activeCount` is updated asynchronously
-            // when the run function is dequeued and called. The comparison in the if-statement
-            // needs to happen asynchronously as well to get an up-to-date value for `activeCount`.
-            await Promise.resolve();
+            (async () => {
+                await Promise.resolve();
 
-            if (activeCount < concurrency && queue.size > 0) {
-                queue.dequeue()();
-            }
-        })();
-    };
-
-    const generator = (fn, ...args) =>
-        new Promise((resolve) => {
-            enqueue(fn, resolve, args);
+                if (activeCount < concurrency && queue.length > 0) {
+                    queue.shift()();
+                }
+            })();
         });
+    }
 
     Object.defineProperties(generator, {
         activeCount: {
             get: () => activeCount,
         },
         pendingCount: {
-            get: () => queue.size,
+            get: () => queue.length,
         },
         clearQueue: {
-            value: () => {
-                queue.clear();
+            value() {
+                queue = [];
             },
         },
     });
