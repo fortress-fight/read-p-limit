@@ -13,8 +13,7 @@
 
 :white_check_mark: 根据 p-limit 的测试文件，实现 p-limit 的功能  
 :white_check_mark: 对比并分析 p-limit 的实现方式  
-:white_check_mark: 调整由自己实现的 p-limit  
-:white_large_square: 总结
+:white_check_mark: 调整由自己实现的 p-limit
 
 ## 环境
 
