@@ -1,12 +1,17 @@
 # p-limit 阅读笔记
 
+源码阅读笔记 01
+
+源码地址：[p-limit](https://github.com/sindresorhus/p-limit)  
+笔记地址：[read-p-limit](https://github.com/fortress-fight/read-p-limit)
+
 ## pLimit 的实现拆分
 
 > 此处没有按照 pLimit 的原因代码进行拆分，而是通过我的理解，拆分出将能够完成当前目的的最少代码
 
-### 1 创建 pLimit 的函数主题
+### 1 创建 pLimit 的函数主体
 
-由 pLimit 的使用方式可以得出，调佣 pLimit 将会得到一个执行函数，并且该执行函数将会返回个 新的 Promise 以供后续调用
+由 pLimit 的使用方式可以得出，调用 pLimit 将会得到一个执行函数，并且该执行函数将会返回个新的 Promise 以供后续调用
 
 ```javascript
 export default function pLimit(concurrency) {
@@ -22,7 +27,7 @@ export default function pLimit(concurrency) {
 
 pLimit 主要执行目的
 
-**NOTE:** 在阅读改代码前建议先了解 `Microtask` 可以搜索 `Promise的执行顺序` 了解更多
+**NOTE:** 在阅读该部分代码前建议先了解 `Microtask` 可以搜索 `Promise的执行顺序` 了解更多
 
 ```javascript
 export default function pLimit(concurrency) {
@@ -73,41 +78,43 @@ export default function pLimit(concurrency) {
 }
 ```
 
-1.  确保执行的顺序以及保证正确的返回函数的调用结果
+#### 2.1 确保执行的顺序以及保证正确的返回函数的调用结果
 
-    我的处理方法是组成一个新的 `Promise` 进入队列，执行时通过 `Promise.all` 来保证执行顺序, 同时主动返回结果 `return result`。
+我的处理方法是组成一个新的 `Promise` 进入队列，执行时通过 `Promise.all` 来保证执行顺序, 同时主动返回结果 `return result`。
 
-    这样做存在需要问题：
+这样做存在一些问题：
 
-    -   只有上一组完成后才能执行下一组，不能高效利用。目标行为：一组中先执行完的先出队列，同时添加新的任务进入队列
+-   只有上一组完成后才能执行下一组，不能高效利用。
 
-        可以通过下面的方式进行测试
+    > 目标行为：一组中先执行完的先出队列，同时添加新的任务进入队列
 
-        ```javascript
-        test("concurrency: 2", async (t) => {
-            const input = [
-                [10, 300],
-                [20, 10],
-                [30, 100],
-                [20, 200],
-            ];
+    可以通过下面的方式进行测试
 
-            const end = timeSpan();
-            const limit = pLimit(2);
+    ```javascript
+    test("concurrency: 2", async (t) => {
+        const input = [
+            [10, 300],
+            [20, 10],
+            [30, 100],
+            [20, 200],
+        ];
 
-            const mapper = ([value, ms]) =>
-                limit(async () => {
-                    await delay(ms);
-                    return value;
-                });
+        const end = timeSpan();
+        const limit = pLimit(2);
 
-            t.deepEqual(
-                await Promise.all(input.map((x) => mapper(x))),
-                [10, 20, 30, 20]
-            );
-            t.true(inRange(end(), { start: 300, end: 360 }));
-        });
-        ```
+        const mapper = ([value, ms]) =>
+            limit(async () => {
+                await delay(ms);
+                return value;
+            });
+
+        t.deepEqual(
+            await Promise.all(input.map((x) => mapper(x))),
+            [10, 20, 30, 20]
+        );
+        t.true(inRange(end(), { start: 300, end: 360 }));
+    });
+    ```
 
     这里，作者通过将包含当前 `Promise` 的 `resolve` 方法传递执行函数 `run` 并储存进队列，这样不仅可以让队列通过先进先出的方式控制执行的顺序
 
@@ -124,73 +131,75 @@ export default function pLimit(concurrency) {
 
     每一个 `Promise task` 完成后，更新 `activeCount` 然后查看队列中是否还存在 `task`,如果还存在就弹出新的 `task` 补充进当前`Microtask` 中
 
-2.  关于 `await Promise.resolve();`
+#### 2.2 关于 `await Promise.resolve();`
 
-    起初我是不能理解 `activeCount` 具体代表着什么，通过代码注释，可以理解这里的 `activeCount` 是表示处于 `Microtask` 中，但还未执行的任务数量。并且由于进入 `Microtask` 的任务要等待同步代码执行结束后才能处理，所以这里使用 `await Promise.resolve();` 来等待上一次运行 `Microtask` 任务的对 `activeCount` 的更新
+起初我是不能理解 `activeCount` 具体代表着什么，通过代码注释，可以理解这里的 `activeCount` 是表示处于 `Microtask` 中，但还未执行的任务数量。并且由于进入 `Microtask` 的任务要等待同步代码执行结束后才能处理，所以这里使用 `await Promise.resolve();` 来等待上一次运行 `Microtask` 任务的对 `activeCount` 的更新
 
-    此处，我的处理方法是通过 `Promise.resolve().then()` 进行处理。 如果使用 `async` 的方式会更加简介也方便理解
+此处，我的处理方法是通过 `Promise.resolve().then()` 进行处理。 如果使用 `async` 的方式会更加简介也方便理解
 
-3.  关于 `run.bind(undefined, fn, resolve, args)`
+#### 2.3 关于 `run.bind(undefined, fn, resolve, args)`
 
-    这里要说明的是，如果函数的调用不依赖 `this` 在绑定的时候使用 `undefined` 会是个不错的选择，之前我会选择使用当前执行环境中的 `this`，这样会带来很多不确定性
+这里要说明的是，如果函数的调用不依赖 `this` 在绑定的时候使用 `undefined` 会是个不错的选择，之前我会选择使用当前执行环境中的 `this`，这样会带来很多不确定性
 
-4.  `async` 函数将会返回一个 `Promise`
+#### 2.4 `async` 函数将会返回一个 `Promise`
 
-5.  关于错误捕获与处理非异步 task 的操作
+#### 2.5 关于错误捕获与处理非异步 task 的操作
 
-    关于错误捕获这里，对应的测试：
+关于错误捕获这里，对应的测试：
 
-    ```javascript
-    test("continues after sync throw", async (t) => {
-        const limit = pLimit(1);
-        let ran = false;
+```javascript
+test("continues after sync throw", async (t) => {
+    const limit = pLimit(1);
+    let ran = false;
 
-        const promises = [
-            limit(() => {
-                throw new Error("err");
-            }),
-            limit(() => {
-                ran = true;
-            }),
-        ];
+    const promises = [
+        limit(() => {
+            throw new Error("err");
+        }),
+        limit(() => {
+            ran = true;
+        }),
+    ];
 
-        await Promise.all(promises).catch(() => {});
+    await Promise.all(promises).catch(() => {});
 
-        t.is(ran, true);
-    });
-    ```
+    t.is(ran, true);
+});
+```
 
-    这里我的理解出现了问题。此处的错误，不是在 limit 内部捕获后不处理，而应该将错误传递出来，让外部能够捕获到。
+这里我的理解出现了问题。此处的错误，不是在 limit 内部捕获后不处理，而应该将错误传递出来，让外部能够捕获到。
 
-    作者的处理方式
+作者的处理方式
 
-    ```javascript
-    const run = async (fn, resolve, args) => {
-        activeCount++;
+```javascript
+const run = async (fn, resolve, args) => {
+    activeCount++;
 
-        const result = (async () => fn(...args))();
+    const result = (async () => fn(...args))();
 
-        resolve(result);
+    resolve(result);
 
-        try {
-            await result;
-        } catch {}
-
-        next();
-    };
-    ```
-
-    首先通过 `(async () => fn(...args))();` 保证返回值为 `Promise`，然后将处理结果通过 `resolve(result);` 同时使用
-
-    ```javascript
     try {
         await result;
     } catch {}
-    ```
 
-    将内部错误处理掉
+    next();
+};
+```
+
+首先通过 `(async () => fn(...args))();` 保证返回值为 `Promise`，然后将处理结果通过 `resolve(result);` 同时使用
+
+```javascript
+try {
+    await result;
+} catch {}
+```
+
+将内部错误处理掉
 
 ### 3 参数校验
+
+我的处理方式
 
 ```javascript
 if (
@@ -203,6 +212,8 @@ if (
     throw new TypeError("Expected `concurrency` to be a number from 1 and up");
 }
 ```
+
+作者的处理方式
 
 ```javascript
 if (!/^[1-9]\d*$/.test(concurrency.toString())) {
@@ -243,7 +254,7 @@ Object.defineProperties(generator, {
 
 ## 重新实现 pLimit
 
-[index.js](https://github.com/fortress-fight/read-p-limit/blob/946e6853956263ecebf24c164c094deeb27f7ccf/index.js)
+代码：[index.js](https://github.com/fortress-fight/read-p-limit/blob/master/index.js)
 
 这部分与 `pLimit` 源码实现方式并无不同，不过有一点值得注意：
 

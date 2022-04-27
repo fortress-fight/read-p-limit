@@ -1,6 +1,9 @@
 # Read p-limit
 
-源码阅读计划 第一期: [p-limit](https://github.com/sindresorhus/p-limit)
+源码阅读计划 第一期:
+
+源码地址：[p-limit](https://github.com/sindresorhus/p-limit)
+笔记地址：[read-p-limit](https://github.com/fortress-fight/read-p-limit)
 
 ## 前言
 
@@ -11,16 +14,14 @@
 
 ### 学习目标
 
-:white_check_mark: 根据 p-limit 的测试文件，实现 p-limit 的功能  
-:white_check_mark: 对比并分析 p-limit 的实现方式  
-:white_check_mark: 调整由自己实现的 p-limit
+-   [x] 根据 p-limit 的测试文件，实现 p-limit 的功能
+-   [x] 对比并分析 p-limit 的实现方式
+-   [x] 调整由自己实现的 p-limit
 
-## 环境
+## 项目初始化
 
 > node 16.14.2  
 > yarn 1.22.18
-
-### 项目初始化
 
 ```bash
 mkdir read-p-limit
@@ -29,8 +30,6 @@ yarn init -y
 npx gitignore node
 ```
 
-### 添加测试文件
-
 1.  安装依赖
 
     ```shell
@@ -38,7 +37,7 @@ npx gitignore node
     yarn add yocto-queue
     ```
 
-2.  test.js
+2.  添加测试文件 test.js
 
     ```javascript
     import test from "ava";
@@ -48,7 +47,7 @@ npx gitignore node
     import pLimit from "./index.js";
     ```
 
-3.  package.json
+3.  修改 package.json
 
     ```javascript
     {
@@ -63,28 +62,28 @@ npx gitignore node
 
     **Note:** 如果对格式没有要求，移除 `xo` 相关内容
 
-## 代码主体实现
+## Tasks
 
-按照需求分步骤的完成以下任务
+按照需求分步骤的完成以下任务，可以尝试自己能否完成测试。
 
 测试代码可查看 [test.js](https://github.com/sindresorhus/p-limit/blob/main/test.js)
 
-:white_check_mark: Task1 通过测试 `concurrency: 1` `concurrency: 4` 以及 `non-promise returning function`  
-:white_check_mark: Task2 通过测试 `continues after sync throw`  
-:white_check_mark: Task3 通过测试 `accepts additional arguments`  
-:white_check_mark: Task4 通过测试 `activeCount and pendingCount properties` 与 `does not ignore errors`  
-:white_check_mark: Task5 通过测试 `throws on invalid concurrency argument`  
-:white_check_mark: Task6 添加清空队列的方法 `clearQueue`  
-:white_check_mark: Task7 添加类型定义文件 `index.d.ts & index.test-d.ts`
+-   [x] Task1 通过测试 `concurrency: 1` `concurrency: 4` 以及 `non-promise returning function`
+-   [x] Task2 通过测试 `continues after sync throw`
+-   [x] Task3 通过测试 `accepts additional arguments`
+-   [x] Task4 通过测试 `activeCount and pendingCount properties` 与 `does not ignore errors`
+-   [x] Task5 通过测试 `throws on invalid concurrency argument`
+-   [x] Task6 添加清空队列的方法 `clearQueue`
+-   [x] Task7 添加类型定义文件 `index.d.ts & index.test-d.ts`
 
-我的实现步骤可查看 [代码实现记录](doc/代码实现记录.md)
+我的实现步骤可查看 [代码实现记录](https://github.com/fortress-fight/read-p-limit/blob/master/doc/%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0%E8%AE%B0%E5%BD%95.md)
 
 ## 源码阅读
 
 源码地址：[p-limit](https://github.com/sindresorhus/p-limit)  
-阅读笔记：[read-p-limit](/doc/read-p-limit.md);
+阅读笔记：[read-p-limit](https://github.com/fortress-fight/read-p-limit/blob/master/doc/read-p-limit.md);
 
 ## 其它
 
-[补充笔记](doc/补充笔记.md)  
-[依赖包介绍](doc/依赖包介绍.md)
+[补充笔记](https://github.com/fortress-fight/read-p-limit/blob/master/doc/%E8%A1%A5%E5%85%85%E7%AC%94%E8%AE%B0.md)  
+[依赖包介绍](https://github.com/fortress-fight/read-p-limit/blob/master/doc/%E4%BE%9D%E8%B5%96%E5%8C%85%E4%BB%8B%E7%BB%8D.md)
