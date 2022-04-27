@@ -12,7 +12,9 @@
 ### 学习目标
 
 :white_check_mark: 根据 p-limit 的测试文件，实现 p-limit 的功能  
-:white_large_square: 对比并分析 p-limit 的实现方式
+:white_check_mark: 对比并分析 p-limit 的实现方式  
+:white_check_mark: 调整由自己实现的 p-limit  
+:white_large_square: 总结
 
 ## 环境
 
@@ -53,114 +55,35 @@ npx gitignore node
     {
         ...
         "scripts": {
+            "fixed": "xo --fix",
             "test": "xo && ava"
         },
         ...
     }
     ```
 
-    **Note:** 如果对格式没有要求，移除 `xo`
+    **Note:** 如果对格式没有要求，移除 `xo` 相关内容
 
 ## 代码主体实现
 
-按照需求分步骤的完成以下任务，具体实现步骤可查看 [代码实现记录](doc/代码实现记录.md)
+按照需求分步骤的完成以下任务
 
-测试代码可查看 [test.js](test.js)
+测试代码可查看 [test.js](https://github.com/sindresorhus/p-limit/blob/main/test.js)
 
 :white_check_mark: Task1 通过测试 `concurrency: 1` `concurrency: 4` 以及 `non-promise returning function`  
 :white_check_mark: Task2 通过测试 `continues after sync throw`  
 :white_check_mark: Task3 通过测试 `accepts additional arguments`  
 :white_check_mark: Task4 通过测试 `activeCount and pendingCount properties` 与 `does not ignore errors`  
 :white_check_mark: Task5 通过测试 `throws on invalid concurrency argument`  
-:white_check_mark: Task6 通过测试 `清空队列`
+:white_check_mark: Task6 添加清空队列的方法 `clearQueue`  
+:white_check_mark: Task7 添加类型定义文件 `index.d.ts & index.test-d.ts`
+
+我的实现步骤可查看 [代码实现记录](doc/代码实现记录.md)
 
 ## 源码阅读
 
-源码地址：[p-limit](https://github.com/sindresorhus/p-limit)
+源码地址：[p-limit](https://github.com/sindresorhus/p-limit)  
 阅读笔记：[read-p-limit](/doc/read-p-limit.md);
-
-## index.d.ts & index.test-d.ts
-
-添加类型定义与类型定义检测
-
-1.  index.test-d.ts
-
-    ```javascript
-    import { expectType } from "tsd";
-    import pLimit from "./index.js";
-
-    const limit = pLimit(1);
-
-    const input = [
-        limit(async () => "foo"),
-        limit(async () => "bar"),
-        limit(async () => undefined),
-    ];
-
-    expectType<Promise<Array<string | undefined>>>(Promise.all(input));
-
-    expectType<Promise<string>>(limit((_a: string) => "", "test"));
-    expectType<Promise<string>>(
-        limit(async (_a: string, _b: number) => "", "test", 1)
-    );
-
-    expectType<number>(limit.activeCount);
-    expectType<number>(limit.pendingCount);
-
-    expectType<void>(limit.clearQueue());
-    ```
-
-2.  index.d.ts
-
-    ```javascript
-    /**
-        Run multiple promise-returning & async functions with limited concurrency.
-
-        @param limitCount - 并发数，最小为 1.
-        @returns `limit` 处理器.
-    */
-    export default function pLimit(limitCount: number): LimitFunction;
-
-    export interface LimitFunction {
-        /**
-         正在执行的 promises 数量.
-        */
-        readonly activeCount: number;
-
-        /**
-            等待执行的 promises 数量.
-        */
-        readonly pendingCount: number;
-
-        /**
-            清空等待执行的 promises 队列.
-        */
-        clearQueue: () => void;
-
-        /**
-            @param fn - Promise-returning/async function.
-            @param arguments - Any arguments to pass through to `fn`. Support for passing arguments on to the `fn` is provided in order to be able to avoid creating unnecessary closures. You probably don't need this optimization unless you're pushing a lot of functions.
-            @returns The promise returned by calling `fn(...arguments)`.
-        */
-        <Arguments extends unknown[], ReturnType>(
-            fn: (...arguments: Arguments) => PromiseLike<ReturnType> | ReturnType,
-            ...arguments: Arguments
-        ): Promise<ReturnType>;
-    }
-
-    ```
-
-3.  package.json
-
-    ```javascript
-    {
-        ...
-        "scripts": {
-            "test": "xo && ava && tsd"
-        },
-        ...
-    }
-    ```
 
 ## 其它
 

@@ -241,12 +241,145 @@ Object.defineProperties(generator, {
 
 `yocto-queue` 是 JS 实现的队列，相较于 `Array` 具有更高的执行效率，用来更新上面的 `queue`，此处没有特殊的部分，不做额外说明
 
-## pLimit 变量名
+## 重新实现 pLimit
 
-|    名称     |  解释  |
-| :---------: | :----: |
-| concurrency |  并发  |
-|    queue    |  队列  |
-|   dequeue   |  出列  |
-|   enqueue   |  入列  |
-|  generator  | 执行器 |
+[index.js](https://github.com/fortress-fight/read-p-limit/blob/946e6853956263ecebf24c164c094deeb27f7ccf/index.js)
+
+这部分与 `pLimit` 源码实现方式并无不同，不过有一点值得注意：
+
+`pLimit` 源码中的 `clearQueue` 实现十分简单粗暴，但是未执行的 `Promise` 将始终处于 `pending` 状态。 例如：
+
+```javascript
+test("activeCount and pendingCount properties", async (t) => {
+    const limit = pLimit(5);
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    const runningPromise1 = limit(() => delay(1000));
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 1);
+
+    await Promise.resolve();
+    t.is(limit.activeCount, 1);
+    t.is(limit.pendingCount, 0);
+
+    await runningPromise1;
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    const immediatePromises = Array.from({ length: 5 }, () =>
+        limit(() => delay(1000))
+    );
+    const delayedPromises = Array.from({ length: 3 }, () =>
+        limit(() => delay(1000))
+    );
+
+    await Promise.resolve();
+    t.is(limit.activeCount, 5);
+    t.is(limit.pendingCount, 3);
+
+    await Promise.all(immediatePromises);
+    t.is(limit.activeCount, 3);
+    t.is(limit.pendingCount, 0);
+
+    await Promise.all(delayedPromises);
+
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+});
+```
+
+中 `await Promise.all(delayedPromises);` 将会阻塞程序的运行。 未处理的 `Promise` 还将会造成内存泄露，可以通过下面的方式进行验证
+
+```javascript
+let i = 0;
+let arr = [];
+while (i++ < 10000) {
+    arr.push(
+        new Promise((res) => {
+            if (false) {
+                res();
+            }
+        })
+    );
+}
+arr = [];
+queryObjects(Promise);
+```
+
+建议在执行`clearQueue` 时，将执行剩余的 `Promise` 的 `reject` 方法。下面添加一个测试方法，以及我设想的解决方法
+
+```javascript
+test("清空队列", async (t) => {
+    const limit = pLimit(5);
+    const error = new Error("Aborted");
+
+    const immediatePromises = Array.from({ length: 5 }, () =>
+        limit(() => delay(1000))
+    );
+    const delayedPromises = Array.from({ length: 3 }, () =>
+        limit(() => delay(1000))
+    );
+
+    await Promise.resolve();
+    limit.clearQueue();
+    t.is(limit.activeCount, 5);
+    t.is(limit.pendingCount, 0);
+
+    await Promise.all(immediatePromises);
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+
+    await Promise.all(delayedPromises)
+        .then((response) => {
+            t.is(response[0].message, error.message);
+        })
+        .catch(() => {});
+
+    t.is(limit.activeCount, 0);
+    t.is(limit.pendingCount, 0);
+});
+```
+
+```bash
+-    function generator(fn, ...arg) {
+-        return new Promise((resolve) => {
+-            queue.push(run.bind(undefined, fn, resolve, arg));
++    async function abort(fn, resolve, reject) {
++        reject(new Error("Aborted"));
++    }
++
++    function enqueue(fn, resolve, reject, arg) {
++        queue.enqueue({
++            run: run.bind(undefined, fn, resolve, arg),
++            abort: abort.bind(undefined, fn, resolve, reject),
++        });
++    }
+
++    function generator(fn, ...arg) {
++        return new Promise((resolve, reject) => {
++            enqueue(fn, resolve, reject, arg);
+             (async () => {
+                 await Promise.resolve();
+
+-                if (activeCount < concurrency && queue.length > 0) {
+-                    queue.shift()();
++                if (activeCount < concurrency && queue.size > 0) {
++                    queue.dequeue().run();
+                 }
+             })();
+-        });
++        }).then(
++            (response) => {
++                return response;
++            },
++            (error) => {
++                if (error.message === "Aborted") {
++                    return error;
++                }
++
++                throw error;
++            }
++        );
+     }
+```
